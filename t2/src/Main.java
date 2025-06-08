@@ -22,7 +22,7 @@ public class Main {
 
     public static void main(String[] args) {
         // Inicialização de alguns dados para exemplo
-        inicializarDadosExemplo();
+        // inicializarDadosExemplo();
 
         int opcaoPrincipal;
         do {
@@ -93,20 +93,20 @@ public class Main {
 
             String dataAtual = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-            // Note que o construtor do Post agora aceita Sublueddit
-            Post postDC1 = new Post(betoneira.getId(), betoneira, bDC, dataAtual, "Superman é o mais forte do universo DC.", 0, 0); // Passe o ID do usuário e do sublueddit
+            // CORREÇÃO: Utilizando o novo construtor de Post
+            Post postDC1 = new Post(betoneira, bDC, dataAtual, "Superman é o mais forte do universo DC.", 0, 0);
             postDao.salvar(postDC1);
             bDC.adicionarPost(postDC1); // Adiciona à lista em memória do Sublueddit
 
-            Post postDC2 = new Post(Kitts.getId(), Kitts, bDC, dataAtual, "Batman ganha de todos os hérois existentes!", 0, 0);
+            Post postDC2 = new Post(Kitts, bDC, dataAtual, "Batman ganha de todos os hérois existentes!", 0, 0);
             postDao.salvar(postDC2);
             bDC.adicionarPost(postDC2);
 
-            Post postMarvel1 = new Post(trk.getId(), trk, bMarvel, dataAtual, "Homem Aranha solta teia por outras partes?", 0, 0);
+            Post postMarvel1 = new Post(trk, bMarvel, dataAtual, "Homem Aranha solta teia por outras partes?", 0, 0);
             postDao.salvar(postMarvel1);
             bMarvel.adicionarPost(postMarvel1);
 
-            Post postMarvel2 = new Post(betoneira.getId(), betoneira, bMarvel, dataAtual, "Talvez o Thanos estivesse certo... Alguém concorda comigo?", 0, 0);
+            Post postMarvel2 = new Post(betoneira, bMarvel, dataAtual, "Talvez o Thanos estivesse certo... Alguém concorda comigo?", 0, 0);
             postDao.salvar(postMarvel2);
             bMarvel.adicionarPost(postMarvel2);
 

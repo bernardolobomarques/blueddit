@@ -25,18 +25,18 @@ public class SubluedditDAO implements BaseDAO {
     @Override
     public void salvar(Object objeto) {
         if (!(objeto instanceof Sublueddit)) { // Se for Sublueddit, mude aqui.
-            throw new IllegalArgumentException("Objeto deve ser do tipo Subreddit.");
+            throw new IllegalArgumentException("Objeto deve ser do tipo Sublueddit.");
         }
-        Sublueddit subreddit = (Sublueddit) objeto; // Se for Sublueddit, mude aqui.
+        Sublueddit sublueddit = (Sublueddit) objeto; // Se for Sublueddit, mude aqui.
         try {
-            String sql = "INSERT INTO subreddit (nome) VALUES (?)";
+            String sql = "INSERT INTO sublueddit (nome) VALUES (?)";
             try (PreparedStatement pstm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                pstm.setString(1, subreddit.getNome());
+                pstm.setString(1, sublueddit.getNome());
                 pstm.execute();
 
                 try (ResultSet rst = pstm.getGeneratedKeys()) {
                     while (rst.next()) {
-                        subreddit.setId(rst.getInt(1)); // Supondo que Subreddit tenha setId
+                        sublueddit.setId(rst.getInt(1)); // Supondo que Sublueddit tenha setId
                     }
                 }
             }
@@ -48,14 +48,14 @@ public class SubluedditDAO implements BaseDAO {
     @Override
     public Object buscarPorId(int id) {
         try {
-            String sql = "SELECT id, nome FROM subreddit WHERE id = ?";
+            String sql = "SELECT id, nome FROM sublueddit WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setInt(1, id);
                 pstm.execute();
                 try (ResultSet rst = pstm.getResultSet()) {
                     if (rst.next()) {
-                        Sublueddit sr = new Sublueddit(rst.getString("nome")); // Supondo construtor Subreddit(String nome)
-                        sr.setId(rst.getInt("id")); // Supondo que Subreddit tenha setId
+                        Sublueddit sr = new Sublueddit(rst.getString("nome")); // Supondo construtor Sublueddit(String nome)
+                        sr.setId(rst.getInt("id")); // Supondo que Sublueddit tenha setId
                         return sr;
                     }
                 }
@@ -68,20 +68,20 @@ public class SubluedditDAO implements BaseDAO {
 
     @Override
     public ArrayList<Object> listarTodosLazyLoading() {
-        ArrayList<Object> subreddits = new ArrayList<>();
+        ArrayList<Object> sublueddits = new ArrayList<>();
         try {
-            String sql = "SELECT id, nome FROM subreddit";
+            String sql = "SELECT id, nome FROM sublueddit";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.execute();
                 try (ResultSet rst = pstm.getResultSet()) {
                     while (rst.next()) {
                         Sublueddit sr = new Sublueddit(rst.getString("nome"));
                         sr.setId(rst.getInt("id"));
-                        subreddits.add(sr);
+                        sublueddits.add(sr);
                     }
                 }
             }
-            return subreddits;
+            return sublueddits;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -89,16 +89,16 @@ public class SubluedditDAO implements BaseDAO {
 
     @Override
     public ArrayList<Object> listarTodosEagerLoading() {
-        ArrayList<Object> subreddits = new ArrayList<>();
-        Sublueddit ultimoSubreddit = null;
+        ArrayList<Object> sublueddits = new ArrayList<>();
+        Sublueddit ultimoSublueddit = null;
         // Para eager loading completo de posts (com seus usuários), precisaríamos de um mecanismo mais complexo
-        // ou de múltiplas consultas. Para este exemplo, farei eager loading dos posts do subreddit.
+        // ou de múltiplas consultas. Para este exemplo, farei eager loading dos posts do sublueddit.
         // Se precisar de usuários dos posts, o PostDAO já faria isso.
 
         try {
             String sql = "SELECT s.id, s.nome, p.id, p.data_publicada, p.descricao, p.upvote, p.downvote, u.id, u.nome " +
-                    "FROM subreddit AS s " +
-                    "LEFT JOIN post AS p ON s.id = p.fk_subreddit " +
+                    "FROM sublueddit AS s " +
+                    "LEFT JOIN post AS p ON s.id = p.sublueddit " +
                     "LEFT JOIN usuario AS u ON p.fk_usuario = u.id " +
                     "ORDER BY s.id, p.id";
 
@@ -106,12 +106,12 @@ public class SubluedditDAO implements BaseDAO {
                 pstm.execute();
                 try (ResultSet rst = pstm.getResultSet()) {
                     while (rst.next()) {
-                        if (ultimoSubreddit == null || ultimoSubreddit.getId() != rst.getInt(1)) {
+                        if (ultimoSublueddit == null || ultimoSublueddit.getId() != rst.getInt(1)) {
                             int s_id = rst.getInt(1);
                             String s_nome = rst.getString(2);
-                            ultimoSubreddit = new Sublueddit(s_nome);
-                            ultimoSubreddit.setId(s_id);
-                            subreddits.add(ultimoSubreddit);
+                            ultimoSublueddit = new Sublueddit(s_nome);
+                            ultimoSublueddit.setId(s_id);
+                            sublueddits.add(ultimoSublueddit);
                         }
 
                         if (rst.getInt(3) != 0) { // Se houver um Post
@@ -130,12 +130,12 @@ public class SubluedditDAO implements BaseDAO {
                             }
                             Post post = new Post(postUsuario, p_data, p_descricao, p_upvote, p_downvote, null);
                             post.setId(p_id);
-                            ultimoSubreddit.getPosts().add(post); // Supondo um métodos getPosts() que retorna a lista
+                            ultimoSublueddit.getPosts().add(post); // Supondo um métodos getPosts() que retorna a lista
                         }
                     }
                 }
             }
-            return subreddits;
+            return sublueddits;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -144,14 +144,14 @@ public class SubluedditDAO implements BaseDAO {
     @Override
     public void atualizar(Object objeto) {
         if (!(objeto instanceof Sublueddit)) { // Se for Sublueddit, mude aqui.
-            throw new IllegalArgumentException("Objeto deve ser do tipo Subreddit.");
+            throw new IllegalArgumentException("Objeto deve ser do tipo Sublueddit.");
         }
-        Sublueddit subreddit = (Sublueddit) objeto; // Se for Sublueddit, mude aqui.
+        Sublueddit sublueddit = (Sublueddit) objeto; // Se for Sublueddit, mude aqui.
         try {
-            String sql = "UPDATE subreddit SET nome = ? WHERE id = ?";
+            String sql = "UPDATE sublueddit SET nome = ? WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.setString(1, subreddit.getNome());
-                pstm.setInt(2, subreddit.getId());
+                pstm.setString(1, sublueddit.getNome());
+                pstm.setInt(2, sublueddit.getId());
                 pstm.executeUpdate();
             }
         } catch (SQLException e) {
@@ -162,9 +162,9 @@ public class SubluedditDAO implements BaseDAO {
     @Override
     public void excluir(int id) {
         try {
-            // Excluir um subreddit pode exigir que os posts relacionados sejam excluídos primeiro,
+            // Excluir um sublueddit pode exigir que os posts relacionados sejam excluídos primeiro,
             // ou que suas FKs sejam setadas para NULL.
-            String sql = "DELETE FROM subreddit WHERE id = ?";
+            String sql = "DELETE FROM sublueddit WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setInt(1, id);
                 pstm.executeUpdate();

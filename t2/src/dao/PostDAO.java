@@ -28,10 +28,10 @@ public class PostDAO implements BaseDAO {
         }
         Post post = (Post) objeto;
         try {
-            String sql = "INSERT INTO post (fk_usuario, fk_subreddit, data_publicacao, descricao, upvote, downvote) VALUES (?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO post (fk_usuario, fk_sublueddit, data_publicacao, descricao, upvote, downvote) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pstm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 pstm.setInt(1, post.getUsuario().getId()); // Supondo que Usuario tenha getId()
-                pstm.setInt(2, post.getSublueddit().getId()); // Supondo que Post tenha getSubreddit() e Subreddit tenha getId()
+                pstm.setInt(2, post.getSublueddit().getId()); // Supondo que Post tenha geSublueddit() e Sublueddit tenha getId()
                 pstm.setString(3, post.getDataPublicada());
                 pstm.setString(4, post.getDescricao());
                 pstm.setInt(5, post.getUpvote());
@@ -58,7 +58,7 @@ public class PostDAO implements BaseDAO {
     public Object buscarPorId(int id) {
         // Implementação lazy, sem carregar comentários ou usuário/subreddit completo
         try {
-            String sql = "SELECT id, fk_usuario, fk_subreddit, data_publicacao, descricao, upvote, downvote FROM post WHERE id = ?";
+            String sql = "SELECT id, fk_usuario, fk_sublueddit, data_publicacao, descricao, upvote, downvote FROM post WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setInt(1, id);
                 pstm.execute();
@@ -70,7 +70,7 @@ public class PostDAO implements BaseDAO {
                         Usuario usuario = (Usuario) uDao.buscarPorId(rst.getInt("fk_usuario"));
 
                         SubluedditDAO srDao = new SubluedditDAO(); // Se for Sublueddit, mude aqui.
-                        Sublueddit subreddit = (Sublueddit) srDao.buscarPorId(rst.getInt("fk_subreddit")); // Se for Sublueddit, mude aqui.
+                        Sublueddit sublueddit = (Sublueddit) srDao.buscarPorId(rst.getInt("fk_sublueddit")); // Se for Sublueddit, mude aqui.
 
                         Post post = new Post(usuario, rst.getString("data_publicacao"), rst.getString("descricao"),
                                 rst.getInt("upvote"), rst.getInt("downvote"), null);
@@ -95,7 +95,7 @@ public class PostDAO implements BaseDAO {
     public ArrayList<Object> listarTodosLazyLoading() {
         ArrayList<Object> posts = new ArrayList<>();
         try {
-            String sql = "SELECT id, fk_usuario, fk_subreddit, data_publicacao, descricao, upvote, downvote FROM post";
+            String sql = "SELECT id, fk_usuario, fk_sublueddit, data_publicacao, descricao, upvote, downvote FROM post";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.execute();
                 try (ResultSet rst = pstm.getResultSet()) {
@@ -105,7 +105,7 @@ public class PostDAO implements BaseDAO {
                         tempUser.setId(rst.getInt("fk_usuario"));
 
                         Sublueddit tempSub = new Sublueddit("temp"); // Crie um objeto temporário
-                        tempSub.setId(rst.getInt("fk_subreddit"));
+                        tempSub.setId(rst.getInt("fk_sublueddit"));
 
                         Post p = new Post(tempUser, rst.getString("data_publicacao"), rst.getString("descricao"),
                                 rst.getInt("upvote"), rst.getInt("downvote"), null);
@@ -134,7 +134,7 @@ public class PostDAO implements BaseDAO {
                     "c.id AS comment_id, c.texto AS comment_texto, cu.id AS comment_user_id, cu.nome AS comment_user_nome " +
                     "FROM post AS p " +
                     "JOIN usuario AS u ON p.fk_usuario = u.id " +
-                    "JOIN subreddit AS s ON p.fk_subreddit = s.id " + // Se for Sublueddit, mude aqui.
+                    "JOIN sublueddit AS s ON p.fk_sublueddit = s.id " + // Se for Sublueddit, mude aqui.
                     "LEFT JOIN comentario AS c ON p.id = c.fk_post " +
                     "LEFT JOIN usuario AS cu ON c.fk_usuario = cu.id " +
                     "ORDER BY p.id, c.id";
@@ -153,12 +153,12 @@ public class PostDAO implements BaseDAO {
                             Usuario postUsuario = new Usuario(rst.getString("user_nome"));
                             postUsuario.setId(rst.getInt("user_id"));
 
-                            Sublueddit postSubreddit = new Sublueddit(rst.getString("sub_nome")); // Se for Sublueddit, mude aqui.
-                            postSubreddit.setId(rst.getInt("sub_id"));
+                            Sublueddit postSublueddit = new Sublueddit(rst.getString("sub_nome")); // Se for Sublueddit, mude aqui.
+                            postSublueddit.setId(rst.getInt("sub_id"));
 
                             ultimoPost = new Post(postUsuario, p_data, p_descricao, p_upvote, p_downvote, null);
                             ultimoPost.setId(p_id);
-                            ultimoPost.setSublueddit(postSubreddit); // Supondo setSubreddit em Post.java
+                            ultimoPost.setSublueddit(postSublueddit); // Supondo setSubreddit em Post.java
                             posts.add(ultimoPost);
                             ultimoComentario = null; // Reinicia comentários para o novo post
                         }

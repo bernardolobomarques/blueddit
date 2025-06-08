@@ -37,6 +37,17 @@ public class Post implements Voto { // Implementa Voto
         this.comentarios = new ArrayList<>();
     }
 
+    // Novo construtor para criar instâncias que ainda não foram persistidas
+    public Post(Usuario usuario, Sublueddit sublueddit, String dataPublicada, String descricao, int upvote, int downvote) {
+        this.usuario = usuario;
+        this.sublueddit = sublueddit;
+        this.dataPublicada = dataPublicada;
+        this.descricao = descricao;
+        this.upvote = upvote;
+        this.downvote = downvote;
+        this.comentarios = new ArrayList<>();
+    }
+
     // Getters e Setters para 'id'
     public int getId() { // Adicionado
         return id;
