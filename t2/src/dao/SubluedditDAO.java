@@ -5,29 +5,29 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.LocalDate; // Para posts
 import java.util.ArrayList;
-
+import java.util.List;
 import bd.ConexaoSQL;
 import modelo.Sublueddit;
-import modelo.Sublueddit; // Se for Sublueddit, mude aqui.
 import modelo.Post;
-import modelo.Usuario; // Para Eager Loading de posts
+import modelo.Usuario;
+import modelo.Comentario;
 
 public class SubluedditDAO implements BaseDAO {
 
     private Connection connection;
 
-    public SubluedditDAO() {
-        this.connection = ConexaoSQL.recuperaConexao();
+    // Construtor agora recebe a conexão
+    public SubluedditDAO(Connection connection) {
+        this.connection = connection;
     }
 
     @Override
     public void salvar(Object objeto) {
-        if (!(objeto instanceof Sublueddit)) { // Se for Sublueddit, mude aqui.
+        if (!(objeto instanceof Sublueddit)) {
             throw new IllegalArgumentException("Objeto deve ser do tipo Sublueddit.");
         }
-        Sublueddit sublueddit = (Sublueddit) objeto; // Se for Sublueddit, mude aqui.
+        Sublueddit sublueddit = (Sublueddit) objeto;
         try {
             String sql = "INSERT INTO sublueddit (nome) VALUES (?)";
             try (PreparedStatement pstm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -35,8 +35,8 @@ public class SubluedditDAO implements BaseDAO {
                 pstm.execute();
 
                 try (ResultSet rst = pstm.getGeneratedKeys()) {
-                    while (rst.next()) {
-                        sublueddit.setId(rst.getInt(1)); // Supondo que Sublueddit tenha setId
+                    if (rst.next()) {
+                        sublueddit.setId(rst.getInt(1));
                     }
                 }
             }
@@ -54,8 +54,8 @@ public class SubluedditDAO implements BaseDAO {
                 pstm.execute();
                 try (ResultSet rst = pstm.getResultSet()) {
                     if (rst.next()) {
-                        Sublueddit sr = new Sublueddit(rst.getString("nome")); // Supondo construtor Sublueddit(String nome)
-                        sr.setId(rst.getInt("id")); // Supondo que Sublueddit tenha setId
+                        Sublueddit sr = new Sublueddit(rst.getString("nome"));
+                        sr.setId(rst.getInt("id"));
                         return sr;
                     }
                 }
@@ -90,63 +90,89 @@ public class SubluedditDAO implements BaseDAO {
     @Override
     public ArrayList<Object> listarTodosEagerLoading() {
         ArrayList<Object> sublueddits = new ArrayList<>();
-        Sublueddit ultimoSublueddit = null;
-        // Para eager loading completo de posts (com seus usuários), precisaríamos de um mecanismo mais complexo
-        // ou de múltiplas consultas. Para este exemplo, farei eager loading dos posts do sublueddit.
-        // Se precisar de usuários dos posts, o PostDAO já faria isso.
+        java.util.Map<Integer, Sublueddit> subluedditMap = new java.util.HashMap<>();
+        java.util.Map<Integer, Post> postMap = new java.util.HashMap<>();
+        java.util.Map<Integer, Usuario> usuarioMap = new java.util.HashMap<>();
 
-        try {
-            String sql = "SELECT s.id, s.nome, p.id, p.data_publicada, p.descricao, p.upvote, p.downvote, u.id, u.nome " +
-                    "FROM sublueddit AS s " +
-                    "LEFT JOIN post AS p ON s.id = p.sublueddit " +
-                    "LEFT JOIN usuario AS u ON p.fk_usuario = u.id " +
-                    "ORDER BY s.id, p.id";
+        String sql = "SELECT s.id AS sub_id, s.nome AS sub_nome, " +
+                "p.id AS post_id, p.data_publicacao, p.descricao, p.upvote, p.downvote, " +
+                "u_post.id AS post_autor_id, u_post.nome AS post_autor_nome, " +
+                "c.id AS com_id, c.texto AS com_texto, " +
+                "u_com.id AS com_autor_id, u_com.nome AS com_autor_nome " +
+                "FROM sublueddit AS s " +
+                "LEFT JOIN post AS p ON s.id = p.fk_sublueddit " +
+                "LEFT JOIN usuario AS u_post ON p.fk_usuario = u_post.id " +
+                "LEFT JOIN comentario AS c ON p.id = c.fk_post " +
+                "LEFT JOIN usuario AS u_com ON c.fk_usuario = u_com.id " +
+                "ORDER BY s.id, p.id, c.id";
 
-            try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.execute();
-                try (ResultSet rst = pstm.getResultSet()) {
-                    while (rst.next()) {
-                        if (ultimoSublueddit == null || ultimoSublueddit.getId() != rst.getInt(1)) {
-                            int s_id = rst.getInt(1);
-                            String s_nome = rst.getString(2);
-                            ultimoSublueddit = new Sublueddit(s_nome);
-                            ultimoSublueddit.setId(s_id);
-                            sublueddits.add(ultimoSublueddit);
+        try (PreparedStatement pstm = connection.prepareStatement(sql)) {
+            pstm.execute();
+            try (ResultSet rst = pstm.getResultSet()) {
+                while (rst.next()) {
+                    int subId = rst.getInt("sub_id");
+                    Sublueddit sublueddit = subluedditMap.get(subId);
+                    if (sublueddit == null && subId != 0) {
+                        sublueddit = new Sublueddit(rst.getString("sub_nome"));
+                        sublueddit.setId(subId);
+                        subluedditMap.put(subId, sublueddit);
+                        sublueddits.add(sublueddit);
+                    }
+
+                    int postId = rst.getInt("post_id");
+                    if (postId != 0) {
+                        Post post = postMap.get(postId);
+                        if (post == null) {
+                            int autorPostId = rst.getInt("post_autor_id");
+                            Usuario autorPost = usuarioMap.get(autorPostId);
+                            if (autorPost == null && autorPostId != 0) {
+                                autorPost = new Usuario(rst.getString("post_autor_nome"));
+                                autorPost.setId(autorPostId);
+                                usuarioMap.put(autorPostId, autorPost);
+                            }
+
+                            post = new Post(autorPost, sublueddit, rst.getString("data_publicacao"),
+                                    rst.getString("descricao"), rst.getInt("upvote"), rst.getInt("downvote"));
+                            post.setId(postId);
+                            postMap.put(postId, post);
+                            if (sublueddit != null) {
+                                sublueddit.adicionarPost(post);
+                            }
                         }
 
-                        if (rst.getInt(3) != 0) { // Se houver um Post
-                            int p_id = rst.getInt(3);
-                            String p_data = rst.getString(4);
-                            String p_descricao = rst.getString(5);
-                            int p_upvote = rst.getInt(6);
-                            int p_downvote = rst.getInt(7);
+                        int comId = rst.getInt("com_id");
+                        if (comId != 0) {
+                            boolean commentExists = post.getComentarios().stream().anyMatch(c -> c.getId() == comId);
+                            if (!commentExists) {
+                                int autorComId = rst.getInt("com_autor_id");
+                                Usuario autorComentario = usuarioMap.get(autorComId);
+                                if (autorComentario == null && autorComId != 0) {
+                                    autorComentario = new Usuario(rst.getString("com_autor_nome"));
+                                    autorComentario.setId(autorComId);
+                                    usuarioMap.put(autorComId, autorComentario);
+                                }
 
-                            Usuario postUsuario = null;
-                            if (rst.getInt(8) != 0) { // Se houver um Usuário para o Post
-                                int u_id = rst.getInt(8);
-                                String u_nome = rst.getString(9);
-                                postUsuario = new Usuario(u_nome);
-                                postUsuario.setId(u_id);
+                                Comentario comentario = new Comentario(rst.getString("com_texto"), autorComentario, post);
+                                comentario.setId(comId);
+                                post.adicionarComentario(comentario);
                             }
-                            Post post = new Post(postUsuario, p_data, p_descricao, p_upvote, p_downvote, null);
-                            post.setId(p_id);
-                            ultimoSublueddit.getPosts().add(post); // Supondo um métodos getPosts() que retorna a lista
                         }
                     }
                 }
             }
-            return sublueddits;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return sublueddits;
     }
+
 
     @Override
     public void atualizar(Object objeto) {
-        if (!(objeto instanceof Sublueddit)) { // Se for Sublueddit, mude aqui.
+        if (!(objeto instanceof Sublueddit)) {
             throw new IllegalArgumentException("Objeto deve ser do tipo Sublueddit.");
         }
-        Sublueddit sublueddit = (Sublueddit) objeto; // Se for Sublueddit, mude aqui.
+        Sublueddit sublueddit = (Sublueddit) objeto;
         try {
             String sql = "UPDATE sublueddit SET nome = ? WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
@@ -162,19 +188,13 @@ public class SubluedditDAO implements BaseDAO {
     @Override
     public void excluir(int id) {
         try {
-            // Excluir um sublueddit pode exigir que os posts relacionados sejam excluídos primeiro,
-            // ou que suas FKs sejam setadas para NULL.
             String sql = "DELETE FROM sublueddit WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setInt(1, id);
                 pstm.executeUpdate();
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Erro ao excluir sublueddit. Verifique as dependências (posts).", e);
         }
-    }
-
-    public void closeConnection() {
-        ConexaoSQL.fechaConexao(this.connection);
     }
 }

@@ -1,3 +1,4 @@
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -7,8 +8,7 @@ import modelo.Comentario;
 import modelo.Sublueddit;
 import modelo.Post;
 import modelo.Usuario;
-import modelo.Voto;
-import dao.UsuarioDAO; // Importe seus DAOs
+import dao.UsuarioDAO;
 import dao.PostDAO;
 import dao.ComentarioDAO;
 import dao.SubluedditDAO;
@@ -16,14 +16,44 @@ import bd.ConexaoSQL; // Importe sua classe de conexão
 
 public class Main {
 
+    // DAOs para acesso ao banco de dados
+    private static UsuarioDAO usuarioDAO;
+    private static SubluedditDAO subluedditDAO;
+    private static PostDAO postDAO;
+    private static ComentarioDAO comentarioDAO;
+
+    // Listas em memória que refletem os dados do banco.
     private static List<Sublueddit> sublueddits = new ArrayList<>();
     private static List<Usuario> usuarios = new ArrayList<>();
     private static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        // Inicialização de alguns dados para exemplo
-        // inicializarDadosExemplo();
+        // --- GESTÃO CENTRALIZADA DA CONEXÃO ---
+        Connection connection = null;
+        try {
+            // 1. Cria uma única conexão para toda a aplicação
+            connection = ConexaoSQL.recuperaConexao();
 
+            // 2. Inicializa todos os DAOs com a mesma conexão
+            usuarioDAO = new UsuarioDAO(connection);
+            subluedditDAO = new SubluedditDAO(connection);
+            postDAO = new PostDAO(connection);
+            comentarioDAO = new ComentarioDAO(connection);
+
+            // 3. Roda a aplicação
+            carregarDadosDoBanco();
+            executarMenuPrincipal();
+
+        } finally {
+            // 4. Fecha a conexão única no final de tudo
+            if (connection != null) {
+                ConexaoSQL.fechaConexao(connection);
+            }
+            scanner.close();
+        }
+    }
+
+    private static void executarMenuPrincipal() {
         int opcaoPrincipal;
         do {
             System.out.println("\n--- Menu Principal ---");
@@ -52,87 +82,74 @@ public class Main {
                     System.out.println("Opção inválida. Tente novamente.");
             }
         } while (opcaoPrincipal != 0);
-
-        scanner.close();
     }
 
-    private static void inicializarDadosExemplo() {
-        // Exemplo de como usar os DAOs para persistir dados iniciais
-        // Você precisaria de um try-catch-finally para cada bloco de DAO
-        // para garantir que as conexões sejam fechadas.
-        UsuarioDAO usuarioDao = null;
-        SubluedditDAO subluedditDao = null;
-        PostDAO postDao = null;
-        ComentarioDAO comentarioDao = null;
+    /**
+     * Carrega todos os usuários e sublueddits (com seus posts e comentários) do banco.
+     * Se o banco estiver vazio, chama o método para popular com dados iniciais.
+     */
+    private static void carregarDadosDoBanco() {
+        System.out.println("Carregando dados do banco...");
+        usuarios = (List<Usuario>)(List<?>) usuarioDAO.listarTodosEagerLoading();
+        sublueddits = (List<Sublueddit>)(List<?>) subluedditDAO.listarTodosEagerLoading();
 
+        if (usuarios.isEmpty() && sublueddits.isEmpty()) {
+            System.out.println("Banco de dados vazio. Populando com dados de exemplo...");
+            popularDadosIniciais();
+            // Recarrega os dados após popular.
+            usuarios = (List<Usuario>)(List<?>) usuarioDAO.listarTodosEagerLoading();
+            sublueddits = (List<Sublueddit>)(List<?>) subluedditDAO.listarTodosEagerLoading();
+        }
+        System.out.println("Dados carregados com sucesso!");
+    }
+
+    // O resto da classe Main continua igual...
+
+    private static void popularDadosIniciais() {
         try {
-            usuarioDao = new UsuarioDAO();
-            subluedditDao = new SubluedditDAO();
-            postDao = new PostDAO();
-            comentarioDao = new ComentarioDAO();
-
             Usuario betoneira = new Usuario("betoneira");
-            usuarioDao.salvar(betoneira);
-            usuarios.add(betoneira); // Adiciona à lista em memória também
+            usuarioDAO.salvar(betoneira);
 
-            Usuario Kitts = new Usuario("Kitts");
-            usuarioDao.salvar(Kitts);
-            usuarios.add(Kitts);
+            Usuario kitts = new Usuario("Kitts");
+            usuarioDAO.salvar(kitts);
 
             Usuario trk = new Usuario("trk");
-            usuarioDao.salvar(trk);
-            usuarios.add(trk);
+            usuarioDAO.salvar(trk);
 
             Sublueddit bDC = new Sublueddit("DC");
-            subluedditDao.salvar(bDC);
-            sublueddits.add(bDC);
+            subluedditDAO.salvar(bDC);
 
             Sublueddit bMarvel = new Sublueddit("Marvel");
-            subluedditDao.salvar(bMarvel);
-            sublueddits.add(bMarvel);
+            subluedditDAO.salvar(bMarvel);
 
             String dataAtual = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-            // CORREÇÃO: Utilizando o novo construtor de Post
             Post postDC1 = new Post(betoneira, bDC, dataAtual, "Superman é o mais forte do universo DC.", 0, 0);
-            postDao.salvar(postDC1);
-            bDC.adicionarPost(postDC1); // Adiciona à lista em memória do Sublueddit
+            postDAO.salvar(postDC1);
 
-            Post postDC2 = new Post(Kitts, bDC, dataAtual, "Batman ganha de todos os hérois existentes!", 0, 0);
-            postDao.salvar(postDC2);
-            bDC.adicionarPost(postDC2);
+            Post postDC2 = new Post(kitts, bDC, dataAtual, "Batman ganha de todos os hérois existentes!", 0, 0);
+            postDAO.salvar(postDC2);
 
             Post postMarvel1 = new Post(trk, bMarvel, dataAtual, "Homem Aranha solta teia por outras partes?", 0, 0);
-            postDao.salvar(postMarvel1);
-            bMarvel.adicionarPost(postMarvel1);
+            postDAO.salvar(postMarvel1);
 
             Post postMarvel2 = new Post(betoneira, bMarvel, dataAtual, "Talvez o Thanos estivesse certo... Alguém concorda comigo?", 0, 0);
-            postDao.salvar(postMarvel2);
-            bMarvel.adicionarPost(postMarvel2);
+            postDAO.salvar(postMarvel2);
 
-            Comentario com1 = new Comentario("Não, é o Batman!", Kitts, postDC1);
-            comentarioDao.salvar(com1);
-            Kitts.comentar(postDC1, com1.getTexto()); // Mantém a lógica de objeto em memória
+            Comentario com1 = new Comentario("Não, é o Batman!", kitts, postDC1);
+            comentarioDAO.salvar(com1);
 
             Comentario com2 = new Comentario("Concordo, ele é o melhor!", trk, postDC1);
-            comentarioDao.salvar(com2);
-            trk.comentar(postDC1, com2.getTexto());
+            comentarioDAO.salvar(com2);
 
             Comentario com3 = new Comentario("Talvez kkkk", betoneira, postMarvel1);
-            comentarioDao.salvar(com3);
-            betoneira.comentar(postMarvel1, com3.getTexto());
+            comentarioDAO.salvar(com3);
 
             System.out.println("Dados de exemplo inicializados e salvos no banco de dados.");
 
         } catch (RuntimeException e) {
             System.err.println("Erro durante a inicialização dos dados: " + e.getMessage());
             e.printStackTrace();
-        } finally {
-            // Garanta que as conexões sejam fechadas
-            if (usuarioDao != null) usuarioDao.closeConnection();
-            if (subluedditDao != null) subluedditDao.closeConnection();
-            if (postDao != null) postDao.closeConnection();
-            if (comentarioDao != null) comentarioDao.closeConnection();
         }
     }
 
@@ -140,18 +157,23 @@ public class Main {
         System.out.print("Digite o nome do novo usuário: ");
         String nomeUsuario = scanner.nextLine();
         Usuario novoUsuario = new Usuario(nomeUsuario);
+
+        usuarioDAO.salvar(novoUsuario);
         usuarios.add(novoUsuario);
+
         System.out.println("Usuário '" + nomeUsuario + "' criado com sucesso!");
     }
 
     private static void criarNovoSublueddit() {
-        System.out.print("Digite o nome do novo sublueddit : b/");
+        System.out.print("Digite o nome do novo sublueddit: b/");
         String nomeSublueddit = scanner.nextLine();
         Sublueddit novoSublueddit = new Sublueddit(nomeSublueddit);
+
+        subluedditDAO.salvar(novoSublueddit);
         sublueddits.add(novoSublueddit);
+
         System.out.println("Sublueddit 'b/" + nomeSublueddit + "' criado com sucesso!");
     }
-
 
     private static void entrarSublueddit() {
         if (sublueddits.isEmpty()) {
@@ -165,7 +187,7 @@ public class Main {
         }
         System.out.print("Escolha um sublueddit (digite o número): ");
         int escolhaSublueddit = scanner.nextInt();
-        scanner.nextLine(); // Consumir a quebra de linha
+        scanner.nextLine();
 
         if (escolhaSublueddit > 0 && escolhaSublueddit <= sublueddits.size()) {
             Sublueddit subluedditSelecionado = sublueddits.get(escolhaSublueddit - 1);
@@ -184,7 +206,7 @@ public class Main {
             System.out.println("3. Voltar ao Menu Principal");
             System.out.print("Escolha uma opção: ");
             opcaoSublueddit = scanner.nextInt();
-            scanner.nextLine(); // Consumir a quebra de linha
+            scanner.nextLine();
 
             switch (opcaoSublueddit) {
                 case 1:
@@ -209,8 +231,9 @@ public class Main {
         }
 
         System.out.println("\n--- Posts em b/" + sublueddit.getNome() + " ---");
-        for (int i = 0; i < sublueddit.getPosts().size(); i++) {
-            Post post = sublueddit.getPosts().get(i);
+        List<Post> postsDoSublueddit = sublueddit.getPosts();
+        for (int i = 0; i < postsDoSublueddit.size(); i++) {
+            Post post = postsDoSublueddit.get(i);
             System.out.println((i + 1) + ". [" + post.getUpvoteCount() + "▲ " + post.getDownvoteCount() + "▼] " +
                     post.getDescricao() + " (Por: " + post.getUsuario().getNome() + ")");
             System.out.println("   Comentários (" + post.getComentarios().size() + ")");
@@ -228,8 +251,8 @@ public class Main {
             int escolhaPost = scanner.nextInt();
             scanner.nextLine();
 
-            if (escolhaPost > 0 && escolhaPost <= sublueddit.getPosts().size()) {
-                Post postSelecionado = sublueddit.getPosts().get(escolhaPost - 1);
+            if (escolhaPost > 0 && escolhaPost <= postsDoSublueddit.size()) {
+                Post postSelecionado = postsDoSublueddit.get(escolhaPost - 1);
                 menuInteracaoPost(postSelecionado);
             } else {
                 System.out.println("Número de post inválido.");
@@ -265,10 +288,10 @@ public class Main {
 
             switch (opcaoInteracao) {
                 case 1:
-                    selecionarUsuarioParaVoto(post, null, "upvote");
+                    selecionarUsuarioParaVoto(post, "upvote");
                     break;
                 case 2:
-                    selecionarUsuarioParaVoto(post, null, "downvote");
+                    selecionarUsuarioParaVoto(post, "downvote");
                     break;
                 case 3:
                     adicionarComentario(post);
@@ -282,7 +305,7 @@ public class Main {
         } while (opcaoInteracao != 4);
     }
 
-    private static void selecionarUsuarioParaVoto(Post post, Comentario comentario, String tipoVoto) {
+    private static void selecionarUsuarioParaVoto(Post post, String tipoVoto) {
         if (usuarios.isEmpty()) {
             System.out.println("Nenhum usuário disponível para votar.");
             return;
@@ -298,23 +321,21 @@ public class Main {
 
         if (escolhaUsuario > 0 && escolhaUsuario <= usuarios.size()) {
             Usuario usuarioVotante = usuarios.get(escolhaUsuario - 1);
-            if (post != null) {
-                if (tipoVoto.equals("upvote")) {
-                    usuarioVotante.upvotePost(post);
-                    System.out.println("Upvote no post '" + post.getDescricao() + "' por " + usuarioVotante.getNome() + "!");
-                } else if (tipoVoto.equals("downvote")) {
-                    usuarioVotante.downvotePost(post);
-                    System.out.println("Downvote no post '" + post.getDescricao() + "' por " + usuarioVotante.getNome() + "!");
-                }
+            if (tipoVoto.equals("upvote")) {
+                post.upvote();
+                System.out.println("Upvote no post '" + post.getDescricao() + "' por " + usuarioVotante.getNome() + "!");
+            } else if (tipoVoto.equals("downvote")) {
+                post.downvote();
+                System.out.println("Downvote no post '" + post.getDescricao() + "' por " + usuarioVotante.getNome() + "!");
             }
-            // Lógica para votar em comentários não está implementada nas classes Usuario,
-            // mas poderia ser adicionada similarmente.
-            // if (comentario != null) { ... }
+
+            postDAO.atualizar(post);
+            System.out.println("Voto salvo no banco de dados.");
+
         } else {
             System.out.println("Usuário inválido.");
         }
     }
-
 
     private static void criarPost(Sublueddit sublueddit) {
         if (usuarios.isEmpty()) {
@@ -328,7 +349,7 @@ public class Main {
         }
         System.out.print("Escolha um usuário (digite o número): ");
         int escolhaUsuario = scanner.nextInt();
-        scanner.nextLine(); // Consumir a quebra de linha
+        scanner.nextLine();
 
         if (escolhaUsuario > 0 && escolhaUsuario <= usuarios.size()) {
             Usuario autor = usuarios.get(escolhaUsuario - 1);
@@ -337,9 +358,13 @@ public class Main {
             String descricao = scanner.nextLine();
             String dataAtual = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-            Post novoPost = autor.criarPost(autor, dataAtual, descricao, 0, 0, null);
+            Post novoPost = new Post(autor, sublueddit, dataAtual, descricao, 0, 0);
+
+            postDAO.salvar(novoPost);
+
             sublueddit.adicionarPost(novoPost);
-            System.out.println("Post criado com sucesso em r/" + sublueddit.getNome() + "!");
+
+            System.out.println("Post criado com sucesso em b/" + sublueddit.getNome() + "!");
         } else {
             System.out.println("Usuário inválido.");
         }
@@ -357,13 +382,19 @@ public class Main {
         }
         System.out.print("Escolha um usuário (digite o número): ");
         int escolhaUsuario = scanner.nextInt();
-        scanner.nextLine(); // Consumir a quebra de linha
+        scanner.nextLine();
 
         if (escolhaUsuario > 0 && escolhaUsuario <= usuarios.size()) {
             Usuario autorComentario = usuarios.get(escolhaUsuario - 1);
             System.out.print("Digite seu comentário: ");
             String textoComentario = scanner.nextLine();
-            autorComentario.comentar(post, textoComentario);
+
+            Comentario novoComentario = new Comentario(textoComentario, autorComentario, post);
+
+            comentarioDAO.salvar(novoComentario);
+
+            post.adicionarComentario(novoComentario);
+
             System.out.println("Comentário adicionado com sucesso!");
         } else {
             System.out.println("Usuário inválido.");
