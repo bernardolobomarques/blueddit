@@ -2,7 +2,6 @@ package modelo;
 
 import java.time.LocalDateTime;
 
-// 1. CLASSE ABSTRATA
 public abstract class Conteudo implements Voto {
 
     private int id;
@@ -12,6 +11,10 @@ public abstract class Conteudo implements Voto {
     private int upvotes;
     private int downvotes;
 
+    /**
+     * Construtor para criar um NOVO conteúdo.
+     * A data de criação é definida como o momento atual e os votos são zerados.
+     */
     public Conteudo(Usuario autor, String texto) {
         this.autor = autor;
         this.texto = texto;
@@ -19,6 +22,20 @@ public abstract class Conteudo implements Voto {
         this.upvotes = 0;
         this.downvotes = 0;
     }
+
+    /**
+     * NOVO CONSTRUTOR para carregar conteúdo do BANCO DE DADOS.
+     * Este construtor aceita todos os parâmetros para reconstruir o estado
+     * completo de um objeto que já existe no banco.
+     */
+    public Conteudo(Usuario autor, String texto, LocalDateTime dataCriacao, int upvotes, int downvotes) {
+        this.autor = autor;
+        this.texto = texto;
+        this.dataCriacao = dataCriacao;
+        this.upvotes = upvotes;
+        this.downvotes = downvotes;
+    }
+
 
     // Getters e Setters
     public int getId() { return id; }
@@ -44,6 +61,5 @@ public abstract class Conteudo implements Voto {
     public void setUpvoteCount(int count) { this.upvotes = count; }
     public void setDownvoteCount(int count) { this.downvotes = count; }
 
-    // Método abstrato para obter o tipo de conteúdo (útil no VotoDAO)
     public abstract String getTipo();
 }

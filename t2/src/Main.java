@@ -1,4 +1,5 @@
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -6,13 +7,13 @@ import modelo.Comentario;
 import modelo.Sublueddit;
 import modelo.Post;
 import modelo.Usuario;
-import modelo.Conteudo; // Import
+import modelo.Conteudo;
 import dao.UsuarioDAO;
 import dao.PostDAO;
 import dao.ComentarioDAO;
 import dao.SubluedditDAO;
-import dao.InscricaoDAO; // Import
-import dao.VotoDAO;       // Import
+import dao.InscricaoDAO;
+import dao.VotoDAO;
 import bd.ConexaoSQL;
 
 public class Main {
@@ -21,13 +22,13 @@ public class Main {
     private static SubluedditDAO subluedditDAO;
     private static PostDAO postDAO;
     private static ComentarioDAO comentarioDAO;
-    private static InscricaoDAO inscricaoDAO; // DAO para N-N
-    private static VotoDAO votoDAO;           // DAO para votos
+    private static InscricaoDAO inscricaoDAO;
+    private static VotoDAO votoDAO;
 
     private static List<Sublueddit> sublueddits = new ArrayList<>();
     private static List<Usuario> usuarios = new ArrayList<>();
     private static Scanner scanner = new Scanner(System.in);
-    private static Usuario usuarioLogado = null; // Simula um login
+    private static Usuario usuarioLogado = null;
 
     public static void main(String[] args) {
         Connection connection = null;
@@ -42,14 +43,14 @@ public class Main {
 
             carregarDadosDoBanco();
 
-            // Simulação de Login
+            // Novo fluxo de seleção de usuário
             selecionarUsuarioLogado();
-            if(usuarioLogado == null) {
-                System.out.println("Nenhum usuário selecionado. Encerrando.");
-                return;
-            }
 
-            executarMenuPrincipal();
+            if (usuarioLogado != null) {
+                executarMenuPrincipal();
+            } else {
+                System.out.println("Nenhum usuário selecionado. Encerrando programa.");
+            }
 
         } finally {
             if (connection != null) {
@@ -59,24 +60,52 @@ public class Main {
         }
     }
 
-    private static void selecionarUsuarioLogado(){
-        System.out.println("--- Bem-vindo ao Blueddit! ---");
-        if(usuarios.isEmpty()){
-            System.out.println("Nenhum usuário cadastrado. Crie um primeiro.");
-            criarNovoUsuario();
-            if(usuarios.isEmpty()){ return; }
-        }
-        System.out.println("\nQuem está usando o sistema?");
-        for (int i = 0; i < usuarios.size(); i++) {
-            System.out.println((i + 1) + ". " + usuarios.get(i).getNome());
-        }
-        System.out.print("Escolha um usuário (digite o número): ");
-        int escolha = scanner.nextInt();
-        scanner.nextLine();
+    /**
+     * NOVO MÉTODO DE SELEÇÃO DE USUÁRIO
+     * Permite selecionar um usuário existente, criar um novo, ou sair do programa.
+     */
+    private static void selecionarUsuarioLogado() {
+        int escolha;
+        while (true) {
+            System.out.println("\n--- Bem-vindo ao Blueddit! ---");
+            System.out.println("Quem está usando o sistema?");
 
-        if (escolha > 0 && escolha <= usuarios.size()) {
-            usuarioLogado = usuarios.get(escolha - 1);
-            System.out.println("Bem-vindo(a), " + usuarioLogado.getNome() + "!");
+            if (usuarios.isEmpty()) {
+                System.out.println("Nenhum usuário cadastrado.");
+            } else {
+                for (int i = 0; i < usuarios.size(); i++) {
+                    System.out.println((i + 1) + ". " + usuarios.get(i).getNome());
+                }
+            }
+            System.out.println("---------------------------------");
+            System.out.println((usuarios.size() + 1) + ". Criar novo usuário");
+            System.out.println("0. Sair");
+            System.out.print("Escolha uma opção: ");
+
+            // Validação de entrada
+            try {
+                escolha = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Opção inválida. Por favor, digite um número.");
+                continue;
+            }
+
+            if (escolha > 0 && escolha <= usuarios.size()) {
+                // Selecionou um usuário existente
+                usuarioLogado = usuarios.get(escolha - 1);
+                System.out.println("\nBem-vindo(a), " + usuarioLogado.getNome() + "!");
+                return; // Sai do método e continua para o menu principal
+            } else if (escolha == usuarios.size() + 1) {
+                // Criar novo usuário
+                criarNovoUsuario();
+                // O loop continuará, mostrando a lista atualizada
+            } else if (escolha == 0) {
+                // Sair
+                usuarioLogado = null;
+                return; // Sai do método
+            } else {
+                System.out.println("Opção inválida. Tente novamente.");
+            }
         }
     }
 
@@ -87,11 +116,16 @@ public class Main {
             System.out.println("\n--- Menu Principal (Logado como: " + usuarioLogado.getNome() + ") ---");
             System.out.println("1. Ver Sublueddits");
             System.out.println("2. Criar novo Sublueddit");
-            System.out.println("3. Criar novo Usuário");
+            System.out.println("3. Criar novo Usuário"); // Mantido para conveniência
             System.out.println("0. Sair");
             System.out.print("Escolha uma opção: ");
-            opcaoPrincipal = scanner.nextInt();
-            scanner.nextLine();
+
+            try {
+                opcaoPrincipal = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Opção inválida. Por favor, digite um número.");
+                opcaoPrincipal = -1; // valor inválido para repetir o loop
+            }
 
             switch (opcaoPrincipal) {
                 case 1:
@@ -123,8 +157,7 @@ public class Main {
             System.out.println((i + 1) + ". b/" + sublueddits.get(i).getNome());
         }
         System.out.print("Escolha um sublueddit para entrar (ou 0 para voltar): ");
-        int escolha = scanner.nextInt();
-        scanner.nextLine();
+        int escolha = Integer.parseInt(scanner.nextLine());
 
         if (escolha > 0 && escolha <= sublueddits.size()) {
             Sublueddit subluedditSelecionado = sublueddits.get(escolha - 1);
@@ -139,12 +172,11 @@ public class Main {
             System.out.println("\n--- b/" + sublueddit.getNome() + (isIncrito ? " (Inscrito)" : "") + " ---");
             System.out.println("1. Ver Posts");
             System.out.println("2. Criar Post");
-            if(isIncrito) System.out.println("3. Desinscrever-se");
+            if (isIncrito) System.out.println("3. Desinscrever-se");
             else System.out.println("3. Inscrever-se");
             System.out.println("0. Voltar");
             System.out.print("Escolha uma opção: ");
-            opcao = scanner.nextInt();
-            scanner.nextLine();
+            opcao = Integer.parseInt(scanner.nextLine());
 
             switch (opcao) {
                 case 1:
@@ -154,7 +186,7 @@ public class Main {
                     criarPost(sublueddit);
                     break;
                 case 3:
-                    if(isIncrito) {
+                    if (isIncrito) {
                         inscricaoDAO.desinscrever(usuarioLogado, sublueddit);
                         usuarioLogado.desinscrever(sublueddit);
                     } else {
@@ -170,13 +202,33 @@ public class Main {
         } while (opcao != 0);
     }
 
+    /**
+     * MÉTODO IMPLEMENTADO
+     * Exibe os posts de um sublueddit e permite a interação.
+     */
     private static void verPosts(Sublueddit sublueddit) {
-        // ... (lógica para exibir posts, similar à anterior)
+        List<Post> posts = sublueddit.getPosts();
+        if (posts.isEmpty()) {
+            System.out.println("\nNenhum post neste sublueddit ainda. Que tal criar o primeiro?");
+            return;
+        }
+
+        System.out.println("\n--- Posts em b/" + sublueddit.getNome() + " ---");
+        for (int i = 0; i < posts.size(); i++) {
+            Post p = posts.get(i);
+            System.out.println((i + 1) + ". " + p.getTexto() + " (por: " + p.getAutor().getNome() + ") [" + p.getUpvoteCount() + "▲ " + p.getDownvoteCount() + "▼]");
+        }
+
+        System.out.print("Escolha um post para interagir (ou 0 para voltar): ");
+        int escolha = Integer.parseInt(scanner.nextLine());
+
+        if (escolha > 0 && escolha <= posts.size()) {
+            Post postSelecionado = posts.get(escolha - 1);
+            menuInteracaoPost(postSelecionado);
+        }
     }
 
     private static void menuInteracaoPost(Post post) {
-        // ... (lógica para interagir com post)
-        // A principal mudança será chamar o menu de interação de conteúdo
         menuInteracaoConteudo(post);
     }
 
@@ -201,7 +253,7 @@ public class Main {
                 } else {
                     for (int i = 0; i < post.getComentarios().size(); i++) {
                         Comentario c = post.getComentarios().get(i);
-                        System.out.println("  " + (i + 1) + ". " + c.getTexto() + " (Por: " + c.getAutor().getNome() + ") ["+ c.getUpvoteCount() +"▲ "+ c.getDownvoteCount() +"▼]");
+                        System.out.println("  " + (i + 1) + ". " + c.getTexto() + " (Por: " + c.getAutor().getNome() + ") [" + c.getUpvoteCount() + "▲ " + c.getDownvoteCount() + "▼]");
                     }
                 }
                 System.out.println("\nOpções:");
@@ -219,10 +271,9 @@ public class Main {
             }
 
             System.out.print("Escolha: ");
-            opcao = scanner.nextInt();
-            scanner.nextLine();
+            opcao = Integer.parseInt(scanner.nextLine());
 
-            switch(opcao) {
+            switch (opcao) {
                 case 1: // UPVOTE
                     votarNoConteudo(conteudo, 1);
                     break;
@@ -238,11 +289,10 @@ public class Main {
                     break;
                 case 4: // Interagir com Comentário (só para Post)
                     if (conteudo instanceof Post) {
-                        System.out.print("Digite o número do comentário: ");
-                        int comIndex = scanner.nextInt() - 1;
-                        scanner.nextLine();
                         Post post = (Post) conteudo;
-                        if(comIndex >= 0 && comIndex < post.getComentarios().size()){
+                        System.out.print("Digite o número do comentário: ");
+                        int comIndex = Integer.parseInt(scanner.nextLine()) - 1;
+                        if (comIndex >= 0 && comIndex < post.getComentarios().size()) {
                             menuInteracaoConteudo(post.getComentarios().get(comIndex));
                         } else {
                             System.out.println("Comentário inválido.");
@@ -257,7 +307,7 @@ public class Main {
                     System.out.println("Opção inválida.");
             }
 
-        } while(opcao != 0);
+        } while (opcao != 0);
     }
 
     private static void votarNoConteudo(Conteudo conteudo, int tipoVoto) {
@@ -271,8 +321,8 @@ public class Main {
         System.out.print("Digite seu comentário: ");
         String texto = scanner.nextLine();
         Comentario novoComentario = new Comentario(texto, usuarioLogado, post);
-        comentarioDAO.salvar(novoComentario); // Salva no banco
-        post.adicionarComentario(novoComentario); // Adiciona na lista em memória
+        comentarioDAO.salvar(novoComentario);
+        post.adicionarComentario(novoComentario);
         System.out.println("Comentário adicionado!");
     }
 
@@ -288,6 +338,10 @@ public class Main {
     private static void criarNovoUsuario() {
         System.out.print("Digite o nome do novo usuário: ");
         String nomeUsuario = scanner.nextLine();
+        if(nomeUsuario.trim().isEmpty()){
+            System.out.println("O nome do usuário não pode ser vazio.");
+            return;
+        }
         Usuario novoUsuario = new Usuario(nomeUsuario);
         usuarioDAO.salvar(novoUsuario);
         usuarios.add(novoUsuario);
@@ -297,6 +351,10 @@ public class Main {
     private static void criarNovoSublueddit() {
         System.out.print("Digite o nome do novo sublueddit: b/");
         String nomeSublueddit = scanner.nextLine();
+        if(nomeSublueddit.trim().isEmpty()){
+            System.out.println("O nome do sublueddit não pode ser vazio.");
+            return;
+        }
         Sublueddit novoSublueddit = new Sublueddit(nomeSublueddit);
         subluedditDAO.salvar(novoSublueddit);
         sublueddits.add(novoSublueddit);
@@ -305,14 +363,8 @@ public class Main {
 
     private static void carregarDadosDoBanco() {
         System.out.println("Carregando dados do banco...");
-        // A lógica de Eager Loading nos DAOs de Usuário e Sublueddit já carrega tudo
-        usuarios = (List<Usuario>)(List<?>) usuarioDAO.listarTodosEagerLoading();
-        sublueddits = (List<Sublueddit>)(List<?>) subluedditDAO.listarTodosEagerLoading();
-
-        if (usuarios.isEmpty()) {
-            System.out.println("Banco de dados vazio. Populando com dados de exemplo...");
-            // ... (a lógica de popular dados iniciais pode ser mantida aqui)
-        }
+        usuarios = (List<Usuario>) (List<?>) usuarioDAO.listarTodosEagerLoading();
+        sublueddits = (List<Sublueddit>) (List<?>) subluedditDAO.listarTodosEagerLoading();
         System.out.println("Dados carregados com sucesso!");
     }
 }

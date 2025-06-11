@@ -5,17 +5,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import modelo.Usuario;
 import modelo.Post;
 import modelo.Sublueddit;
-import bd.ConexaoSQL;
 
 public class UsuarioDAO implements BaseDAO {
 
     private Connection connection;
 
-    // Construtor agora recebe a conexão
     public UsuarioDAO(Connection connection) {
         this.connection = connection;
     }
@@ -45,94 +46,64 @@ public class UsuarioDAO implements BaseDAO {
 
     @Override
     public Object buscarPorId(int id) {
-        try {
-            String sql = "SELECT id, nome FROM usuario WHERE id = ?";
-            try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.setInt(1, id);
-                pstm.execute();
-                try (ResultSet rst = pstm.getResultSet()) {
-                    if (rst.next()) {
-                        Usuario u = new Usuario(rst.getString("nome"));
-                        u.setId(rst.getInt("id"));
-                        return u;
-                    }
-                }
-            }
-            return null;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return null;
     }
 
     @Override
     public ArrayList<Object> listarTodosLazyLoading() {
-        ArrayList<Object> usuarios = new ArrayList<>();
-        try {
-            String sql = "SELECT id, nome FROM usuario";
-            try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.execute();
-                try (ResultSet rst = pstm.getResultSet()) {
-                    while (rst.next()) {
-                        Usuario u = new Usuario(rst.getString("nome"));
-                        u.setId(rst.getInt("id"));
-                        usuarios.add(u);
-                    }
-                }
-            }
-            return usuarios;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return new ArrayList<>();
     }
 
     @Override
     public ArrayList<Object> listarTodosEagerLoading() {
-        ArrayList<Object> usuarios = new ArrayList<>();
-        Usuario ultimoUsuario = null;
+        Map<Integer, Usuario> usuarioMap = new HashMap<>();
+        Map<Integer, Sublueddit> subluedditMap = new HashMap<>();
 
-        try {
-            String sql = "SELECT u.id AS user_id, u.nome AS user_nome, " +
-                    "p.id AS post_id, p.data_publicacao, p.descricao, p.upvote, p.downvote, " +
-                    "s.id AS sub_id, s.nome AS sub_nome " +
-                    "FROM usuario AS u " +
-                    "LEFT JOIN post AS p ON u.id = p.fk_usuario " +
-                    "LEFT JOIN sublueddit AS s ON p.fk_sublueddit = s.id " +
-                    "ORDER BY u.id, p.id";
+        String sql = "SELECT u.id AS user_id, u.nome AS user_nome, " +
+                "p.id AS post_id, p.descricao, p.data_publicacao, p.upvote, p.downvote, " +
+                "s.id AS sub_id, s.nome AS sub_nome " +
+                "FROM usuario AS u " +
+                "LEFT JOIN post AS p ON u.id = p.fk_usuario " +
+                "LEFT JOIN sublueddit AS s ON p.fk_sublueddit = s.id " +
+                "ORDER BY u.id";
 
-            try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.execute();
-                try (ResultSet rst = pstm.getResultSet()) {
-                    while (rst.next()) {
-                        if (ultimoUsuario == null || ultimoUsuario.getId() != rst.getInt("user_id")) {
-                            int u_id = rst.getInt("user_id");
-                            String u_nome = rst.getString("user_nome");
-                            ultimoUsuario = new Usuario(u_nome);
-                            ultimoUsuario.setId(u_id);
-                            usuarios.add(ultimoUsuario);
+        try (PreparedStatement pstm = connection.prepareStatement(sql)) {
+            pstm.execute();
+            try (ResultSet rst = pstm.getResultSet()) {
+                while (rst.next()) {
+                    int userId = rst.getInt("user_id");
+                    // Extrai a criação do usuário da lambda para tratar a exceção
+                    Usuario usuario = usuarioMap.get(userId);
+                    if (usuario == null) {
+                        usuario = new Usuario(rst.getString("user_nome"));
+                        usuario.setId(userId);
+                        usuarioMap.put(userId, usuario);
+                    }
+
+                    int postId = rst.getInt("post_id");
+                    if (postId != 0 && usuario.getPosts().stream().noneMatch(p -> p.getId() == postId)) {
+                        int subId = rst.getInt("sub_id");
+                        // Extrai a criação do sublueddit da lambda
+                        Sublueddit sublueddit = subluedditMap.get(subId);
+                        if(sublueddit == null) {
+                            sublueddit = new Sublueddit(rst.getString("sub_nome"));
+                            sublueddit.setId(subId);
+                            subluedditMap.put(subId, sublueddit);
                         }
 
-                        int postId = rst.getInt("post_id");
-                        if (postId != 0) {
-                            Sublueddit sublueddit = null;
-                            int subId = rst.getInt("sub_id");
-                            if (subId != 0) {
-                                sublueddit = new Sublueddit(rst.getString("sub_nome"));
-                                sublueddit.setId(subId);
-                            }
-
-                            Post post = new Post(ultimoUsuario, sublueddit, rst.getString("data_publicacao"),
-                                    rst.getString("descricao"), rst.getInt("upvote"), rst.getInt("downvote"));
-                            post.setId(postId);
-
-                            ultimoUsuario.addPost(post);
-                        }
+                        LocalDateTime dataPost = rst.getTimestamp("data_publicacao").toLocalDateTime();
+                        Post post = new Post(usuario, sublueddit, rst.getString("descricao"),
+                                dataPost, rst.getInt("upvote"), rst.getInt("downvote"));
+                        post.setId(postId);
+                        usuario.addPost(post);
                     }
                 }
             }
-            return usuarios;
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            // Envolve a exceção verificada em uma não verificada
+            throw new RuntimeException("Erro ao carregar usuários e posts (Eager Loading).", e);
         }
+        return new ArrayList<>(usuarioMap.values());
     }
 
 

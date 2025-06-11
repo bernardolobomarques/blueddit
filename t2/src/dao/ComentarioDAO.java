@@ -5,9 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
-import bd.ConexaoSQL;
 import modelo.Comentario;
 import modelo.Usuario;
 import modelo.Post;
@@ -17,7 +18,6 @@ public class ComentarioDAO implements BaseDAO {
 
     private Connection connection;
 
-    // Construtor agora recebe a conexão
     public ComentarioDAO(Connection connection) {
         this.connection = connection;
     }
@@ -29,11 +29,15 @@ public class ComentarioDAO implements BaseDAO {
         }
         Comentario comentario = (Comentario) objeto;
         try {
-            String sql = "INSERT INTO comentario (fk_usuario, fk_post, texto) VALUES (?, ?, ?)";
+            // Corrigido para incluir todos os campos necessários
+            String sql = "INSERT INTO comentario (fk_usuario, fk_post, texto, data_publicacao, upvote, downvote) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pstm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 pstm.setInt(1, comentario.getAutor().getId());
                 pstm.setInt(2, comentario.getPost().getId());
                 pstm.setString(3, comentario.getTexto());
+                pstm.setTimestamp(4, Timestamp.valueOf(comentario.getDataCriacao()));
+                pstm.setInt(5, comentario.getUpvoteCount());
+                pstm.setInt(6, comentario.getDownvoteCount());
                 pstm.execute();
 
                 try (ResultSet rst = pstm.getGeneratedKeys()) {
@@ -49,43 +53,21 @@ public class ComentarioDAO implements BaseDAO {
 
     @Override
     public Object buscarPorId(int id) {
-        // Implementação simplificada para evitar complexidade desnecessária
         return null;
     }
 
+    // O método listarTodosEager dos outros DAOs carrega os comentários
     @Override
     public ArrayList<Object> listarTodosLazyLoading() {
-        ArrayList<Object> comentarios = new ArrayList<>();
-        try {
-            String sql = "SELECT id, fk_usuario, fk_post, texto FROM comentario";
-            try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.execute();
-                try (ResultSet rst = pstm.getResultSet()) {
-                    while (rst.next()) {
-                        Usuario tempUser = new Usuario("temp");
-                        tempUser.setId(rst.getInt("fk_usuario"));
-
-                        Usuario placeholderPostAuthor = new Usuario("placeholder");
-                        Sublueddit placeholderSublueddit = new Sublueddit("placeholder");
-                        Post tempPost = new Post(placeholderPostAuthor, placeholderSublueddit, "", "temp post", 0, 0);
-                        tempPost.setId(rst.getInt("fk_post"));
-
-                        Comentario c = new Comentario(rst.getString("texto"), tempUser, tempPost);
-                        c.setId(rst.getInt("id"));
-                        comentarios.add(c);
-                    }
-                }
-            }
-            return comentarios;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return new ArrayList<>();
     }
 
-    public ArrayList<Object> listarComentariosPorPost(Post post) {
-        ArrayList<Object> comentarios = new ArrayList<>();
+    // Carrega comentários de um post específico com todos os dados
+    public ArrayList<Comentario> listarComentariosPorPost(Post post) {
+        ArrayList<Comentario> comentarios = new ArrayList<>();
         try {
-            String sql = "SELECT c.id, c.texto, u.id AS autor_id, u.nome AS autor_nome FROM comentario AS c JOIN usuario AS u ON c.fk_usuario = u.id WHERE c.fk_post = ?";
+            // Corrigido para carregar todos os dados do comentário
+            String sql = "SELECT c.id, c.texto, c.data_publicacao, c.upvote, c.downvote, u.id AS autor_id, u.nome AS autor_nome FROM comentario AS c JOIN usuario AS u ON c.fk_usuario = u.id WHERE c.fk_post = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setInt(1, post.getId());
                 pstm.execute();
@@ -93,7 +75,13 @@ public class ComentarioDAO implements BaseDAO {
                     while (rst.next()) {
                         Usuario autor = new Usuario(rst.getString("autor_nome"));
                         autor.setId(rst.getInt("autor_id"));
-                        Comentario c = new Comentario(rst.getString("texto"), autor, post);
+
+                        LocalDateTime data = rst.getTimestamp("data_publicacao").toLocalDateTime();
+                        int upvotes = rst.getInt("upvote");
+                        int downvotes = rst.getInt("downvote");
+
+                        // Usa o novo construtor
+                        Comentario c = new Comentario(rst.getString("texto"), autor, post, data, upvotes, downvotes);
                         c.setId(rst.getInt("id"));
                         comentarios.add(c);
                     }
@@ -117,10 +105,13 @@ public class ComentarioDAO implements BaseDAO {
         }
         Comentario comentario = (Comentario) objeto;
         try {
-            String sql = "UPDATE comentario SET texto = ? WHERE id = ?";
+            // Atualiza também os votos
+            String sql = "UPDATE comentario SET texto = ?, upvote = ?, downvote = ? WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setString(1, comentario.getTexto());
-                pstm.setInt(2, comentario.getId());
+                pstm.setInt(2, comentario.getUpvoteCount());
+                pstm.setInt(3, comentario.getDownvoteCount());
+                pstm.setInt(4, comentario.getId());
                 pstm.executeUpdate();
             }
         } catch (SQLException e) {

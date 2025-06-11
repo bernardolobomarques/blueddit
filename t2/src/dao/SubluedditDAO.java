@@ -5,9 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
-import bd.ConexaoSQL;
+import java.util.HashMap;
+import java.util.Map;
 import modelo.Sublueddit;
 import modelo.Post;
 import modelo.Usuario;
@@ -17,7 +18,6 @@ public class SubluedditDAO implements BaseDAO {
 
     private Connection connection;
 
-    // Construtor agora recebe a conexão
     public SubluedditDAO(Connection connection) {
         this.connection = connection;
     }
@@ -47,57 +47,24 @@ public class SubluedditDAO implements BaseDAO {
 
     @Override
     public Object buscarPorId(int id) {
-        try {
-            String sql = "SELECT id, nome FROM sublueddit WHERE id = ?";
-            try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.setInt(1, id);
-                pstm.execute();
-                try (ResultSet rst = pstm.getResultSet()) {
-                    if (rst.next()) {
-                        Sublueddit sr = new Sublueddit(rst.getString("nome"));
-                        sr.setId(rst.getInt("id"));
-                        return sr;
-                    }
-                }
-            }
-            return null;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return null;
     }
 
     @Override
     public ArrayList<Object> listarTodosLazyLoading() {
-        ArrayList<Object> sublueddits = new ArrayList<>();
-        try {
-            String sql = "SELECT id, nome FROM sublueddit";
-            try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.execute();
-                try (ResultSet rst = pstm.getResultSet()) {
-                    while (rst.next()) {
-                        Sublueddit sr = new Sublueddit(rst.getString("nome"));
-                        sr.setId(rst.getInt("id"));
-                        sublueddits.add(sr);
-                    }
-                }
-            }
-            return sublueddits;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        return new ArrayList<>();
     }
 
     @Override
     public ArrayList<Object> listarTodosEagerLoading() {
-        ArrayList<Object> sublueddits = new ArrayList<>();
-        java.util.Map<Integer, Sublueddit> subluedditMap = new java.util.HashMap<>();
-        java.util.Map<Integer, Post> postMap = new java.util.HashMap<>();
-        java.util.Map<Integer, Usuario> usuarioMap = new java.util.HashMap<>();
+        Map<Integer, Sublueddit> subluedditMap = new HashMap<>();
+        Map<Integer, Post> postMap = new HashMap<>();
+        Map<Integer, Usuario> usuarioMap = new HashMap<>();
 
         String sql = "SELECT s.id AS sub_id, s.nome AS sub_nome, " +
-                "p.id AS post_id, p.data_publicacao, p.descricao, p.upvote, p.downvote, " +
+                "p.id AS post_id, p.descricao, p.data_publicacao, p.upvote, p.downvote, " +
                 "u_post.id AS post_autor_id, u_post.nome AS post_autor_nome, " +
-                "c.id AS com_id, c.texto AS com_texto, " +
+                "c.id AS com_id, c.texto AS com_texto, c.data_publicacao as com_data, c.upvote as com_up, c.downvote as com_down, " +
                 "u_com.id AS com_autor_id, u_com.nome AS com_autor_nome " +
                 "FROM sublueddit AS s " +
                 "LEFT JOIN post AS p ON s.id = p.fk_sublueddit " +
@@ -112,11 +79,10 @@ public class SubluedditDAO implements BaseDAO {
                 while (rst.next()) {
                     int subId = rst.getInt("sub_id");
                     Sublueddit sublueddit = subluedditMap.get(subId);
-                    if (sublueddit == null && subId != 0) {
+                    if (sublueddit == null) {
                         sublueddit = new Sublueddit(rst.getString("sub_nome"));
                         sublueddit.setId(subId);
                         subluedditMap.put(subId, sublueddit);
-                        sublueddits.add(sublueddit);
                     }
 
                     int postId = rst.getInt("post_id");
@@ -125,45 +91,43 @@ public class SubluedditDAO implements BaseDAO {
                         if (post == null) {
                             int autorPostId = rst.getInt("post_autor_id");
                             Usuario autorPost = usuarioMap.get(autorPostId);
-                            if (autorPost == null && autorPostId != 0) {
+                            if (autorPost == null) {
                                 autorPost = new Usuario(rst.getString("post_autor_nome"));
                                 autorPost.setId(autorPostId);
                                 usuarioMap.put(autorPostId, autorPost);
                             }
 
-                            post = new Post(autorPost, sublueddit, rst.getString("data_publicacao"),
-                                    rst.getString("descricao"), rst.getInt("upvote"), rst.getInt("downvote"));
+                            LocalDateTime dataPost = rst.getTimestamp("data_publicacao").toLocalDateTime();
+                            post = new Post(autorPost, sublueddit, rst.getString("descricao"), dataPost,
+                                    rst.getInt("upvote"), rst.getInt("downvote"));
                             post.setId(postId);
                             postMap.put(postId, post);
-                            if (sublueddit != null) {
-                                sublueddit.adicionarPost(post);
-                            }
+                            sublueddit.adicionarPost(post);
                         }
 
                         int comId = rst.getInt("com_id");
-                        if (comId != 0) {
-                            boolean commentExists = post.getComentarios().stream().anyMatch(c -> c.getId() == comId);
-                            if (!commentExists) {
-                                int autorComId = rst.getInt("com_autor_id");
-                                Usuario autorComentario = usuarioMap.get(autorComId);
-                                if (autorComentario == null && autorComId != 0) {
-                                    autorComentario = new Usuario(rst.getString("com_autor_nome"));
-                                    autorComentario.setId(autorComId);
-                                    usuarioMap.put(autorComId, autorComentario);
-                                }
-
-                                Comentario comentario = new Comentario(rst.getString("com_texto"), autorComentario, post);
-                                comentario.setId(comId);
-                                post.adicionarComentario(comentario);
+                        if (comId != 0 && post.getComentarios().stream().noneMatch(c -> c.getId() == comId)) {
+                            int autorComId = rst.getInt("com_autor_id");
+                            Usuario autorComentario = usuarioMap.get(autorComId);
+                            if (autorComentario == null) {
+                                autorComentario = new Usuario(rst.getString("com_autor_nome"));
+                                autorComentario.setId(autorComId);
+                                usuarioMap.put(autorComId, autorComentario);
                             }
+
+                            LocalDateTime dataCom = rst.getTimestamp("com_data").toLocalDateTime();
+                            Comentario comentario = new Comentario(rst.getString("com_texto"), autorComentario, post,
+                                    dataCom, rst.getInt("com_up"), rst.getInt("com_down"));
+                            comentario.setId(comId);
+                            post.adicionarComentario(comentario);
                         }
                     }
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Erro ao carregar sublueddits (Eager Loading).", e);
         }
-        return sublueddits;
+        return new ArrayList<>(subluedditMap.values());
     }
 
 

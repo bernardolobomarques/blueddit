@@ -20,26 +20,26 @@ CREATE TABLE IF NOT EXISTS sublueddit (
     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabela de Posts
+-- Tabela de Posts (CORRIGIDA)
 CREATE TABLE IF NOT EXISTS post (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fk_usuario INT NOT NULL,
     fk_sublueddit INT NOT NULL,
     descricao TEXT NOT NULL,
-    data_publicacao DATETIME NOT NULL,
+    data_publicacao DATETIME NOT NULL, -- Corrigido para DATETIME
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
     FOREIGN KEY (fk_usuario) REFERENCES usuario(id) ON DELETE CASCADE,
     FOREIGN KEY (fk_sublueddit) REFERENCES sublueddit(id) ON DELETE CASCADE
 );
 
--- Tabela de Comentários
+-- Tabela de Comentários (CORRIGIDA)
 CREATE TABLE IF NOT EXISTS comentario (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fk_usuario INT NOT NULL,
     fk_post INT NOT NULL,
     texto TEXT NOT NULL,
-    data_publicacao DATETIME NOT NULL,
+    data_publicacao DATETIME NOT NULL, -- Coluna adicionada e corrigida para DATETIME
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
     FOREIGN KEY (fk_usuario) REFERENCES usuario(id) ON DELETE CASCADE,
@@ -57,7 +57,6 @@ CREATE TABLE IF NOT EXISTS inscricao (
 );
 
 -- Tabela para registrar os votos em Posts e Comentários
--- tipo_voto: 1 para upvote, -1 para downvote
 CREATE TABLE IF NOT EXISTS voto (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fk_usuario INT NOT NULL,
@@ -74,7 +73,6 @@ CREATE TABLE IF NOT EXISTS voto (
     FOREIGN KEY (fk_comentario) REFERENCES comentario(id) ON DELETE CASCADE,
     -- Constraint para garantir que o voto seja ou 1 ou -1
     CONSTRAINT chk_tipo_voto CHECK (tipo_voto IN (1, -1)),
-    -- Constraint para garantir que o voto esteja associado a um post OU a um comentário, mas não a ambos ou a nenhum
+    -- Constraint para garantir que o voto esteja associado a um post OU a um comentário
     CONSTRAINT chk_conteudo_votado CHECK ((fk_post IS NOT NULL AND fk_comentario IS NULL) OR (fk_post IS NULL AND fk_comentario IS NOT NULL))
 );
-

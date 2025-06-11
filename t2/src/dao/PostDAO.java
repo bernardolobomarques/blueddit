@@ -5,18 +5,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import modelo.Post;
 import modelo.Usuario;
 import modelo.Sublueddit;
-import modelo.Comentario;
-import bd.ConexaoSQL;
 
 public class PostDAO implements BaseDAO {
 
     private Connection connection;
 
-    // Construtor agora recebe a conexão
     public PostDAO(Connection connection) {
         this.connection = connection;
     }
@@ -28,12 +27,13 @@ public class PostDAO implements BaseDAO {
         }
         Post post = (Post) objeto;
         try {
-            String sql = "INSERT INTO post (fk_usuario, fk_sublueddit, data_publicacao, descricao, upvote, downvote) VALUES (?, ?, ?, ?, ?, ?)";
+            // Corrigido a ordem e o tipo dos parâmetros
+            String sql = "INSERT INTO post (fk_usuario, fk_sublueddit, descricao, data_publicacao, upvote, downvote) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pstm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                pstm.setInt(1, post.getUsuario().getId());
+                pstm.setInt(1, post.getAutor().getId());
                 pstm.setInt(2, post.getSublueddit().getId());
-                pstm.setString(3, post.getDataPublicada());
-                pstm.setString(4, post.getDescricao());
+                pstm.setString(3, post.getTexto()); // Usar getTexto() de Conteudo
+                pstm.setTimestamp(4, Timestamp.valueOf(post.getDataCriacao())); // Converter LocalDateTime para Timestamp
                 pstm.setInt(5, post.getUpvoteCount());
                 pstm.setInt(6, post.getDownvoteCount());
                 pstm.execute();
@@ -51,8 +51,7 @@ public class PostDAO implements BaseDAO {
 
     @Override
     public Object buscarPorId(int id) {
-        // Implementação simplificada, pois o Eager Loading principal já cuida disso.
-        // Recriar toda a lógica de DAOs aqui seria ineficiente.
+        // A lógica de Eager Loading já lida com buscas mais complexas.
         return null;
     }
 
@@ -60,19 +59,27 @@ public class PostDAO implements BaseDAO {
     public ArrayList<Object> listarTodosLazyLoading() {
         ArrayList<Object> posts = new ArrayList<>();
         try {
-            String sql = "SELECT id, fk_usuario, fk_sublueddit, data_publicacao, descricao, upvote, downvote FROM post";
+            String sql = "SELECT id, fk_usuario, fk_sublueddit, descricao, data_publicacao, upvote, downvote FROM post";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.execute();
                 try (ResultSet rst = pstm.getResultSet()) {
                     while (rst.next()) {
-                        Usuario tempUser = new Usuario("temp");
+                        Usuario tempUser = new Usuario("temp"); // Lazy: objeto placeholder
                         tempUser.setId(rst.getInt("fk_usuario"));
 
-                        Sublueddit tempSub = new Sublueddit("temp");
+                        Sublueddit tempSub = new Sublueddit("temp"); // Lazy: objeto placeholder
                         tempSub.setId(rst.getInt("fk_sublueddit"));
 
-                        Post p = new Post(tempUser, tempSub, rst.getString("data_publicacao"), rst.getString("descricao"),
-                                rst.getInt("upvote"), rst.getInt("downvote"));
+                        // Corrigido para usar o novo construtor e converter a data
+                        LocalDateTime dataPublicacao = rst.getTimestamp("data_publicacao").toLocalDateTime();
+                        Post p = new Post(
+                                tempUser,
+                                tempSub,
+                                rst.getString("descricao"),
+                                dataPublicacao,
+                                rst.getInt("upvote"),
+                                rst.getInt("downvote"));
+
                         p.setId(rst.getInt("id"));
                         posts.add(p);
                     }
@@ -86,6 +93,7 @@ public class PostDAO implements BaseDAO {
 
     @Override
     public ArrayList<Object> listarTodosEagerLoading() {
+        // Para simplificar, o Eager Loading é feito nos DAOs de Sublueddit e Usuario
         return listarTodosLazyLoading();
     }
 
@@ -99,7 +107,7 @@ public class PostDAO implements BaseDAO {
         try {
             String sql = "UPDATE post SET descricao = ?, upvote = ?, downvote = ? WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
-                pstm.setString(1, post.getDescricao());
+                pstm.setString(1, post.getTexto()); // Usar getTexto() de Conteudo
                 pstm.setInt(2, post.getUpvoteCount());
                 pstm.setInt(3, post.getDownvoteCount());
                 pstm.setInt(4, post.getId());
@@ -113,12 +121,7 @@ public class PostDAO implements BaseDAO {
     @Override
     public void excluir(int id) {
         try {
-            String sqlDeleteComentarios = "DELETE FROM comentario WHERE fk_post = ?";
-            try (PreparedStatement pstm = connection.prepareStatement(sqlDeleteComentarios)) {
-                pstm.setInt(1, id);
-                pstm.executeUpdate();
-            }
-
+            // A exclusão em cascata no banco de dados já lida com os comentários e votos
             String sqlDeletePost = "DELETE FROM post WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sqlDeletePost)) {
                 pstm.setInt(1, id);
