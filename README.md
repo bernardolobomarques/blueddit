@@ -1,5 +1,10 @@
 # Projeto Blueddit
 
+--------
+## PARA RODAR É SÓ DAR CONTINAR MESMSO SEM EDITAR AS CONFIGURAÇÕES
+--------
+
+
 ## Alunos
 | Matrícula | Aluno |
 |---|---|
