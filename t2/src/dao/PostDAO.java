@@ -27,7 +27,6 @@ public class PostDAO implements BaseDAO {
         }
         Post post = (Post) objeto;
         try {
-            // Corrigido a ordem e o tipo dos parâmetros
             String sql = "INSERT INTO post (fk_usuario, fk_sublueddit, descricao, data_publicacao, upvote, downvote) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pstm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 pstm.setInt(1, post.getAutor().getId());
@@ -51,7 +50,6 @@ public class PostDAO implements BaseDAO {
 
     @Override
     public Object buscarPorId(int id) {
-        // A lógica de Eager Loading já lida com buscas mais complexas.
         return null;
     }
 
@@ -93,7 +91,6 @@ public class PostDAO implements BaseDAO {
 
     @Override
     public ArrayList<Object> listarTodosEagerLoading() {
-        // Para simplificar, o Eager Loading é feito nos DAOs de Sublueddit e Usuario
         return listarTodosLazyLoading();
     }
 
@@ -121,7 +118,6 @@ public class PostDAO implements BaseDAO {
     @Override
     public void excluir(int id) {
         try {
-            // A exclusão em cascata no banco de dados já lida com os comentários e votos
             String sqlDeletePost = "DELETE FROM post WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sqlDeletePost)) {
                 pstm.setInt(1, id);

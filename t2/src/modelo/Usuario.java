@@ -7,7 +7,7 @@ public class Usuario {
     private int id;
     private String nome;
     private List<Post> posts;
-    private List<Sublueddit> inscricoes; // Relação N-N
+    private List<Sublueddit> inscricoes;
 
     public Usuario(String nome) {
         this.nome = nome;

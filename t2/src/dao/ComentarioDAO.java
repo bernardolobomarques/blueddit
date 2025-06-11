@@ -29,7 +29,6 @@ public class ComentarioDAO implements BaseDAO {
         }
         Comentario comentario = (Comentario) objeto;
         try {
-            // Corrigido para incluir todos os campos necessários
             String sql = "INSERT INTO comentario (fk_usuario, fk_post, texto, data_publicacao, upvote, downvote) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pstm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 pstm.setInt(1, comentario.getAutor().getId());
@@ -56,17 +55,14 @@ public class ComentarioDAO implements BaseDAO {
         return null;
     }
 
-    // O método listarTodosEager dos outros DAOs carrega os comentários
     @Override
     public ArrayList<Object> listarTodosLazyLoading() {
         return new ArrayList<>();
     }
 
-    // Carrega comentários de um post específico com todos os dados
     public ArrayList<Comentario> listarComentariosPorPost(Post post) {
         ArrayList<Comentario> comentarios = new ArrayList<>();
         try {
-            // Corrigido para carregar todos os dados do comentário
             String sql = "SELECT c.id, c.texto, c.data_publicacao, c.upvote, c.downvote, u.id AS autor_id, u.nome AS autor_nome FROM comentario AS c JOIN usuario AS u ON c.fk_usuario = u.id WHERE c.fk_post = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setInt(1, post.getId());
@@ -80,7 +76,6 @@ public class ComentarioDAO implements BaseDAO {
                         int upvotes = rst.getInt("upvote");
                         int downvotes = rst.getInt("downvote");
 
-                        // Usa o novo construtor
                         Comentario c = new Comentario(rst.getString("texto"), autor, post, data, upvotes, downvotes);
                         c.setId(rst.getInt("id"));
                         comentarios.add(c);
@@ -105,7 +100,6 @@ public class ComentarioDAO implements BaseDAO {
         }
         Comentario comentario = (Comentario) objeto;
         try {
-            // Atualiza também os votos
             String sql = "UPDATE comentario SET texto = ?, upvote = ?, downvote = ? WHERE id = ?";
             try (PreparedStatement pstm = connection.prepareStatement(sql)) {
                 pstm.setString(1, comentario.getTexto());

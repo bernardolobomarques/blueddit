@@ -43,7 +43,6 @@ public class Main {
 
             carregarDadosDoBanco();
 
-            // Novo fluxo de seleção de usuário
             selecionarUsuarioLogado();
 
             if (usuarioLogado != null) {
@@ -60,10 +59,6 @@ public class Main {
         }
     }
 
-    /**
-     * NOVO MÉTODO DE SELEÇÃO DE USUÁRIO
-     * Permite selecionar um usuário existente, criar um novo, ou sair do programa.
-     */
     private static void selecionarUsuarioLogado() {
         int escolha;
         while (true) {
@@ -82,7 +77,6 @@ public class Main {
             System.out.println("0. Sair");
             System.out.print("Escolha uma opção: ");
 
-            // Validação de entrada
             try {
                 escolha = Integer.parseInt(scanner.nextLine());
             } catch (NumberFormatException e) {
@@ -91,18 +85,14 @@ public class Main {
             }
 
             if (escolha > 0 && escolha <= usuarios.size()) {
-                // Selecionou um usuário existente
                 usuarioLogado = usuarios.get(escolha - 1);
                 System.out.println("\nBem-vindo(a), " + usuarioLogado.getNome() + "!");
-                return; // Sai do método e continua para o menu principal
+                return;
             } else if (escolha == usuarios.size() + 1) {
-                // Criar novo usuário
                 criarNovoUsuario();
-                // O loop continuará, mostrando a lista atualizada
             } else if (escolha == 0) {
-                // Sair
                 usuarioLogado = null;
-                return; // Sai do método
+                return; 
             } else {
                 System.out.println("Opção inválida. Tente novamente.");
             }
@@ -116,7 +106,7 @@ public class Main {
             System.out.println("\n--- Menu Principal (Logado como: " + usuarioLogado.getNome() + ") ---");
             System.out.println("1. Ver Sublueddits");
             System.out.println("2. Criar novo Sublueddit");
-            System.out.println("3. Criar novo Usuário"); // Mantido para conveniência
+            System.out.println("3. Criar novo Usuário");
             System.out.println("0. Sair");
             System.out.print("Escolha uma opção: ");
 
@@ -124,7 +114,7 @@ public class Main {
                 opcaoPrincipal = Integer.parseInt(scanner.nextLine());
             } catch (NumberFormatException e) {
                 System.out.println("Opção inválida. Por favor, digite um número.");
-                opcaoPrincipal = -1; // valor inválido para repetir o loop
+                opcaoPrincipal = -1;
             }
 
             switch (opcaoPrincipal) {
@@ -202,10 +192,6 @@ public class Main {
         } while (opcao != 0);
     }
 
-    /**
-     * MÉTODO IMPLEMENTADO
-     * Exibe os posts de um sublueddit e permite a interação.
-     */
     private static void verPosts(Sublueddit sublueddit) {
         List<Post> posts = sublueddit.getPosts();
         if (posts.isEmpty()) {
@@ -263,7 +249,7 @@ public class Main {
                 System.out.println("4. Interagir com um Comentário");
                 System.out.println("0. Voltar");
 
-            } else { // É um comentário
+            } else {
                 System.out.println("\nOpções:");
                 System.out.println("1. Dar Upvote");
                 System.out.println("2. Dar Downvote");
@@ -274,20 +260,20 @@ public class Main {
             opcao = Integer.parseInt(scanner.nextLine());
 
             switch (opcao) {
-                case 1: // UPVOTE
+                case 1: 
                     votarNoConteudo(conteudo, 1);
                     break;
-                case 2: // DOWNVOTE
+                case 2: 
                     votarNoConteudo(conteudo, -1);
                     break;
-                case 3: // Adicionar Comentário (só para Post)
+                case 3: 
                     if (conteudo instanceof Post) {
                         adicionarComentario((Post) conteudo);
                     } else {
                         System.out.println("Opção inválida.");
                     }
                     break;
-                case 4: // Interagir com Comentário (só para Post)
+                case 4: 
                     if (conteudo instanceof Post) {
                         Post post = (Post) conteudo;
                         System.out.print("Digite o número do comentário: ");
@@ -312,7 +298,6 @@ public class Main {
 
     private static void votarNoConteudo(Conteudo conteudo, int tipoVoto) {
         votoDAO.registrarVoto(usuarioLogado, conteudo, tipoVoto);
-        // Após registrar o voto, atualiza a contagem no banco e no objeto
         votoDAO.atualizarContagemVotos(conteudo);
         System.out.println("Voto registrado com sucesso!");
     }

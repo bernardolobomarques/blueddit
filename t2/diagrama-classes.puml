@@ -1,0 +1,137 @@
+@startuml Blueddit
+skinparam classAttributeIconSize 0
+
+' Interfaces
+interface BaseDAO {
+    +salvar(objeto: Object)
+    +buscarPorId(id: int): Object
+    +listarTodosLazyLoading(): ArrayList<Object>
+    +listarTodosEagerLoading(): ArrayList<Object>
+    +atualizar(objeto: Object)
+    +excluir(id: int)
+}
+
+interface Voto {
+    +upvote()
+    +downvote()
+    +getUpvoteCount(): int
+    +getDownvoteCount(): int
+}
+
+' Classes de Modelo
+abstract class Conteudo {
+    -id: int
+    -autor: Usuario
+    -texto: String
+    -dataCriacao: LocalDateTime
+    -upvotes: int
+    -downvotes: int
+    +getId(): int
+    +setId(id: int)
+    +getAutor(): Usuario
+    +setAutor(autor: Usuario)
+    +getTexto(): String
+    +setTexto(texto: String)
+    +getDataCriacao(): LocalDateTime
+    +setDataCriacao(data: LocalDateTime)
+    +upvote()
+    +downvote()
+    +getUpvoteCount(): int
+    +getDownvoteCount(): int
+    +setUpvoteCount(count: int)
+    +setDownvoteCount(count: int)
+    +{abstract} getTipo(): String
+}
+
+class Usuario {
+    -id: int
+    -nome: String
+    -posts: List<Post>
+    -inscricoes: List<Sublueddit>
+    +getId(): int
+    +setId(id: int)
+    +getNome(): String
+    +getPosts(): List<Post>
+    +addPost(post: Post)
+    +getInscricoes(): List<Sublueddit>
+    +inscrever(sublueddit: Sublueddit)
+    +desinscrever(sublueddit: Sublueddit)
+}
+
+class Post {
+    -sublueddit: Sublueddit
+    -comentarios: List<Comentario>
+    +getSublueddit(): Sublueddit
+    +setSublueddit(sublueddit: Sublueddit)
+    +getComentarios(): List<Comentario>
+    +adicionarComentario(comentario: Comentario)
+    +getTipo(): String
+}
+
+class Comentario {
+    -post: Post
+    +getPost(): Post
+    +setPost(post: Post)
+    +getTipo(): String
+}
+
+class Sublueddit {
+    -id: int
+    -nome: String
+    -posts: List<Post>
+    -inscritos: List<Usuario>
+    +getId(): int
+    +setId(id: int)
+    +getNome(): String
+    +getPosts(): List<Post>
+    +adicionarPost(post: Post)
+    +getInscritos(): List<Usuario>
+}
+
+' Classes DAO
+class UsuarioDAO {
+    -connection: Connection
+}
+
+class PostDAO {
+    -connection: Connection
+}
+
+class ComentarioDAO {
+    -connection: Connection
+}
+
+class SubluedditDAO {
+    -connection: Connection
+}
+
+class InscricaoDAO {
+    -connection: Connection
+    +inscrever(usuario: Usuario, sublueddit: Sublueddit)
+    +desinscrever(usuario: Usuario, sublueddit: Sublueddit)
+}
+
+class VotoDAO {
+    -connection: Connection
+    +registrarVoto(usuario: Usuario, conteudo: Conteudo, tipoVoto: int): boolean
+    +atualizarContagemVotos(conteudo: Conteudo)
+}
+
+' Relações
+Conteudo ..|> Voto
+Post --|> Conteudo
+Comentario --|> Conteudo
+Post "0..*" --o "1" Usuario : pertence >
+Comentario "0..*" --o "1" Usuario : pertence >
+Post "0..*" --o "1" Sublueddit : publicado em >
+Comentario "0..*" --o "1" Post : pertence >
+Usuario "0..*" -- "0..*" Sublueddit : inscreve-se em
+Usuario "1" -- "0..*" Post : autor
+Post "1" -- "0..*" Comentario : contém
+
+UsuarioDAO ..|> BaseDAO
+PostDAO ..|> BaseDAO
+ComentarioDAO ..|> BaseDAO
+SubluedditDAO ..|> BaseDAO
+
+@enduml

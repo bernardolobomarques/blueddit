@@ -22,7 +22,6 @@ public class InscricaoDAO {
             pstm.executeUpdate();
             System.out.println("Inscrição de '" + usuario.getNome() + "' em 'b/" + sublueddit.getNome() + "' realizada!");
         } catch (SQLException e) {
-            // Ignora erro se a inscrição já existir (devido à PK composta)
             System.err.println("Usuário já inscrito ou erro ao inscrever: " + e.getMessage());
         }
     }

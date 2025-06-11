@@ -72,7 +72,6 @@ public class UsuarioDAO implements BaseDAO {
             try (ResultSet rst = pstm.getResultSet()) {
                 while (rst.next()) {
                     int userId = rst.getInt("user_id");
-                    // Extrai a criação do usuário da lambda para tratar a exceção
                     Usuario usuario = usuarioMap.get(userId);
                     if (usuario == null) {
                         usuario = new Usuario(rst.getString("user_nome"));
@@ -83,7 +82,6 @@ public class UsuarioDAO implements BaseDAO {
                     int postId = rst.getInt("post_id");
                     if (postId != 0 && usuario.getPosts().stream().noneMatch(p -> p.getId() == postId)) {
                         int subId = rst.getInt("sub_id");
-                        // Extrai a criação do sublueddit da lambda
                         Sublueddit sublueddit = subluedditMap.get(subId);
                         if(sublueddit == null) {
                             sublueddit = new Sublueddit(rst.getString("sub_nome"));
@@ -100,7 +98,6 @@ public class UsuarioDAO implements BaseDAO {
                 }
             }
         } catch (SQLException e) {
-            // Envolve a exceção verificada em uma não verificada
             throw new RuntimeException("Erro ao carregar usuários e posts (Eager Loading).", e);
         }
         return new ArrayList<>(usuarioMap.values());

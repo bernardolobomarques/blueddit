@@ -9,11 +9,9 @@ public class Post extends Conteudo {
     private Sublueddit sublueddit;
     private List<Comentario> comentarios;
 
-    /**
-     * Construtor para criar um NOVO post.
-     */
+    
     public Post(Usuario usuario, Sublueddit sublueddit, String descricao) {
-        super(usuario, descricao); // Chama o construtor de 2 argumentos da classe pai
+        super(usuario, descricao); 
         if (usuario == null || sublueddit == null) {
             throw new IllegalArgumentException("Usuário e Sublueddit não podem ser nulos ao criar um Post.");
         }
@@ -21,11 +19,9 @@ public class Post extends Conteudo {
         this.comentarios = new ArrayList<>();
     }
 
-    /**
-     * NOVO CONSTRUTOR para carregar um post do BANCO DE DADOS.
-     */
+
     public Post(Usuario usuario, Sublueddit sublueddit, String descricao, LocalDateTime dataPublicacao, int upvote, int downvote) {
-        super(usuario, descricao, dataPublicacao, upvote, downvote); // Chama o construtor de 5 argumentos da classe pai
+        super(usuario, descricao, dataPublicacao, upvote, downvote); 
         if (usuario == null || sublueddit == null) {
             throw new IllegalArgumentException("Usuário e Sublueddit não podem ser nulos ao criar um Post.");
         }
@@ -33,7 +29,7 @@ public class Post extends Conteudo {
         this.comentarios = new ArrayList<>();
     }
 
-    // Getters e Setters
+
     public Sublueddit getSublueddit() { return sublueddit; }
     public void setSublueddit(Sublueddit sublueddit) { this.sublueddit = sublueddit; }
     public List<Comentario> getComentarios() { return comentarios; }

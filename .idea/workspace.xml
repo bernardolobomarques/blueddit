@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b1f45917-1c1e-453f-a0bd-e1ea28ccc43f" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/t2/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/bd/ConexaoSQL.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/bd/ConexaoSQL.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/dao/ComentarioDAO.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/dao/ComentarioDAO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/dao/InscricaoDAO.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/dao/InscricaoDAO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/dao/PostDAO.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/dao/PostDAO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/dao/UsuarioDAO.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/dao/UsuarioDAO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/dao/VotoDAO.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/dao/VotoDAO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/modelo/Comentario.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/modelo/Comentario.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/modelo/Conteudo.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/modelo/Conteudo.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/modelo/Post.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/modelo/Post.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/t2/src/modelo/Usuario.java" beforeDir="false" afterPath="$PROJECT_DIR$/t2/src/modelo/Usuario.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="2yNeG9ge7eoZJenbtKTVLXdX2ft" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b1f45917-1c1e-453f-a0bd-e1ea28ccc43f" name="Changes" comment="" />
+      <created>1749679360213</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1749679360213</updated>
+    </task>
+    <servers />
+  </component>
+</project>

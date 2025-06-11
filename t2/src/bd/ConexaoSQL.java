@@ -14,7 +14,7 @@ public class ConexaoSQL {
             String usuario = "root";
             String senha = "admin";
 
-            Class.forName("com.mysql.cj.jdbc.Driver"); // Para MySQL 8.0+
+            Class.forName("com.mysql.cj.jdbc.Driver"); 
 
             Connection connection = DriverManager.getConnection(
                     "jdbc:" + sgbd + "://" + endereco + "/" + bd, usuario, senha);
