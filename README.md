@@ -1,8 +1,7 @@
 # Projeto Blueddit
 
---------
-## PARA RODAR É SÓ DAR CONTINAR MESMSO SEM EDITAR AS CONFIGURAÇÕES
---------
+## PDF
+[Projeto_Blueddit.pdf](https://github.com/user-attachments/files/20699052/Projeto_Blueddit.pdf)
 
 
 ## Alunos
